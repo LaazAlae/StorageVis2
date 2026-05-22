@@ -62,7 +62,7 @@ export const LandingPage = React.memo(function LandingPage() {
 
   return (
     <div className="landing-page">
-      <h1 className="landing-title">File Inventory Explorer</h1>
+      <h1 className="landing-title">Storage Visualizer</h1>
       <div
         className={`drop-zone ${dragging ? 'drop-zone--active' : ''}`}
         onDrop={onDrop} onDragOver={onDragOver} onDragLeave={onDragLeave}

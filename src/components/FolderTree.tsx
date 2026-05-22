@@ -33,7 +33,7 @@ export function FolderTree() {
   const [hasFit, setHasFit] = useState(false);
   const [viewAnimationMs, setViewAnimationMs] = useState(0);
   const viewAnimationTimer = useRef<number | null>(null);
-  const pendingFocus = useRef<{ nodeId: string; mode: 'open' | 'select' } | null>(null);
+  const pendingFocus = useRef<{ nodeId: string; mode: 'open' | 'close' | 'select' } | null>(null);
 
   const previewTree = useMemo(() => {
     if (!tree) return null;
@@ -65,6 +65,17 @@ export function FolderTree() {
         window.clearTimeout(viewAnimationTimer.current);
       }
     };
+  }, []);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const preventPageZoom = (event: WheelEvent) => {
+      if ((event.target as HTMLElement).closest('.inspector')) return;
+      event.preventDefault();
+    };
+    canvas.addEventListener('wheel', preventPageZoom, { passive: false });
+    return () => canvas.removeEventListener('wheel', preventPageZoom);
   }, []);
 
   useEffect(() => {
@@ -107,9 +118,11 @@ export function FolderTree() {
     const groupW = Math.max(maxX - minX, source.w);
     const groupH = Math.max(maxY - minY, NODE_H);
     const fitK = Math.min((cw - 96) / groupW, (ch - 120) / groupH, 1.05);
-    const k = Math.max(0.28, Math.min(transform.k, fitK));
+    const k = focus.mode === 'close'
+      ? Math.max(0.72, Math.min(1.05, fitK))
+      : Math.max(0.28, Math.min(transform.k, fitK));
     const centerX = (minX + maxX) / 2;
-    const sourceScreenY = focus.mode === 'open' ? Math.max(72, ch * 0.18) : ch * 0.35;
+    const sourceScreenY = focus.mode === 'open' ? Math.max(72, ch * 0.18) : ch * 0.34;
 
     pendingFocus.current = null;
     animateView({
@@ -212,11 +225,21 @@ export function FolderTree() {
     }
     const isOpening = !expanded.has(node.id);
     const next = new Set(expanded);
-    if (next.has(node.id)) next.delete(node.id);
-    else next.add(node.id);
-    pendingFocus.current = { nodeId: node.id, mode: isOpening ? 'open' : 'select' };
+    if (next.has(node.id)) {
+      next.delete(node.id);
+      removeExpandedDescendants(node.data, next);
+    } else {
+      next.add(node.id);
+    }
+    pendingFocus.current = { nodeId: node.id, mode: isOpening ? 'open' : 'close' };
     setExpanded(next);
-    setSelectedFolder(node.data, false);
+  }
+
+  function removeExpandedDescendants(folder: FolderNode, next: Set<string>) {
+    for (const child of folder.children) {
+      next.delete(child.id);
+      removeExpandedDescendants(child, next);
+    }
   }
 
   const ancestorIds = useMemo(() => {

@@ -6,7 +6,6 @@ import type { FolderNode } from '../utils/types';
 export function Breadcrumbs() {
   const tree = useFileStore((s) => s.tree);
   const selectedFolder = useFileStore((s) => s.selectedFolder);
-  const setSelectedFolder = useFileStore((s) => s.setSelectedFolder);
 
   const chain = useMemo(() => {
     if (!tree) return [];
@@ -36,8 +35,7 @@ export function Breadcrumbs() {
         return (
           <React.Fragment key={seg.folder.id}>
             {i > 0 && <span className="crumb-sep">{'\u203a'}</span>}
-            <button className={`crumb ${isLast ? 'current' : ''}`}
-              onClick={() => !isLast && setSelectedFolder(seg.folder)}>
+            <button className={`crumb ${isLast ? 'current' : ''}`}>
               {seg.name}
             </button>
           </React.Fragment>

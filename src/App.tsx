@@ -26,8 +26,19 @@ export default function App() {
     <div className="app">
       <header className="app-header">
         <div className="brand">
-          <div className="brand-mark">F</div>
-          <span className="brand-name">File Inventory Explorer</span>
+          <svg className="brand-mark" viewBox="0 0 48 48" aria-hidden="true">
+            <defs>
+              <linearGradient id="brandGradient" x1="7" y1="5" x2="41" y2="43" gradientUnits="userSpaceOnUse">
+                <stop stopColor="#7c3aed" />
+                <stop offset="0.5" stopColor="#2563eb" />
+                <stop offset="1" stopColor="#06b6d4" />
+              </linearGradient>
+            </defs>
+            <rect x="5" y="5" width="38" height="38" rx="12" fill="url(#brandGradient)" />
+            <path d="M15 18.5c0-2.2 1.8-4 4-4h8.3c1.2 0 2.3.5 3.1 1.4l2.6 2.9h-9.6c-2.2 0-4 1.8-4 4v10.7H15V18.5Z" fill="white" opacity="0.96" />
+            <path d="M21 24.3c0-1.7 1.4-3.1 3.1-3.1H35c1.7 0 3.1 1.4 3.1 3.1v6.1c0 1.7-1.4 3.1-3.1 3.1H21v-9.2Z" fill="white" opacity="0.72" />
+          </svg>
+          <span className="brand-name">Storage Visualizer</span>
         </div>
         <div className="header-meta">
           <div className="dataset-pill">

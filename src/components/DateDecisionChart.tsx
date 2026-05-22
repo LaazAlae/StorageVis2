@@ -1,6 +1,5 @@
 import React, { useMemo } from 'react';
 import { useFileStore } from '../store/useFileStore';
-import { formatNumber } from '../utils/formatters';
 import { cutoffTimestamp } from '../utils/importPreview';
 import type { FileRow, FolderNode } from '../utils/types';
 
@@ -37,9 +36,7 @@ export function DateDecisionChart() {
       addToBin(bins, start, now, file.ModifiedDate, 'modified');
     }
 
-    const topCreated = maxBin(bins, 'created');
-    const topModified = maxBin(bins, 'modified');
-    return { bins, files, start, end: now, topCreated, topModified };
+    return { bins, files, start, end: now };
   }, [tree]);
 
   if (!tree || !chart) return null;
@@ -54,10 +51,6 @@ export function DateDecisionChart() {
     pad.top + (1 - value / maxY) * (height - pad.top - pad.bottom);
   const cutoff = cutoffTimestamp(activeCutoffDays);
   const shadeEnd = cutoff ? Math.max(pad.left, Math.min(width - pad.right, xForTime(cutoff))) : pad.left;
-  const kept = activeCutoffDays === null
-    ? chart.files.length
-    : chart.files.filter((file) => file.ModifiedDate >= cutoff!).length;
-
   return (
     <div className="chart-page">
       <section className="chart-card chart-card--full">
@@ -70,29 +63,6 @@ export function DateDecisionChart() {
             <span><i style={{ background: '#f97316' }} /> Created</span>
             <span><i style={{ background: '#2563eb' }} /> Modified</span>
             <span><i style={{ background: '#d6d3d1' }} /> Ignored</span>
-          </div>
-        </div>
-
-        <div className="chart-summary-row">
-          <div className="kpi">
-            <div className="kpi-label">Explorer keeps</div>
-            <div className="kpi-value">{formatNumber(kept)}</div>
-            <div className="kpi-sub">by modified date</div>
-          </div>
-          <div className="kpi">
-            <div className="kpi-label">Explorer ignores</div>
-            <div className="kpi-value">{formatNumber(chart.files.length - kept)}</div>
-            <div className="kpi-sub">{activeCutoffDays === null ? 'slider at oldest file' : `older than ${formatYears(activeCutoffDays / 365)}`}</div>
-          </div>
-          <div className="kpi">
-            <div className="kpi-label">Largest created spike</div>
-            <div className="kpi-value" style={{ color: '#f97316' }}>{formatNumber(chart.topCreated.count)}</div>
-            <div className="kpi-sub">{formatMonth(chart.topCreated.t)}</div>
-          </div>
-          <div className="kpi">
-            <div className="kpi-label">Largest modified spike</div>
-            <div className="kpi-value" style={{ color: '#2563eb' }}>{formatNumber(chart.topModified.count)}</div>
-            <div className="kpi-sub">{formatMonth(chart.topModified.t)}</div>
           </div>
         </div>
 
@@ -179,13 +149,6 @@ function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
 }
 
-function maxBin(bins: Bin[], key: 'created' | 'modified'): { t: number; count: number } {
-  return bins.reduce(
-    (best, bin) => bin[key] > best.count ? { t: bin.t, count: bin[key] } : best,
-    { t: bins[0]?.t || 0, count: 0 },
-  );
-}
-
 function yearTicks(start: number, end: number): number[] {
   const ticks: number[] = [];
   const startYear = new Date(start).getFullYear();
@@ -201,13 +164,4 @@ function formatCompact(value: number): string {
   if (value < 1000) return String(value);
   if (value < 1_000_000) return `${Math.round(value / 1000)}K`;
   return `${(value / 1_000_000).toFixed(1)}M`;
-}
-
-function formatYears(value: number): string {
-  if (value < 1) return '<1 year';
-  return `${value % 1 === 0 ? value.toFixed(0) : value.toFixed(1)} years`;
-}
-
-function formatMonth(value: number): string {
-  return new Date(value).toLocaleDateString(undefined, { month: 'short', year: 'numeric' });
 }
