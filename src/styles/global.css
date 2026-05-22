@@ -45,7 +45,7 @@
   --shadow-xl: 0 16px 48px rgba(28,25,23,0.12), 0 4px 12px rgba(28,25,23,0.06);
 
   /* Type */
-  --font-display: 'Fugaz One', 'Work Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-display: var(--font-sans);
   --font-sans: 'Work Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: 'Work Sans', ui-monospace, 'SF Mono', Menlo, monospace;
 
@@ -58,6 +58,7 @@
 
   /* Theme Overrides */
   --header-bg: #a4262c;
+  --sidebar-bg: #f9e6e6;
 }
 
 /* ─── Reset ─── */
@@ -129,9 +130,9 @@ input { font-family: inherit; }
 
 .brand-name {
   font-family: var(--font-display);
-  font-weight: 400;
-  font-size: 16px;
-  letter-spacing: 0;
+  font-weight: 600;
+  font-size: 24px;
+  letter-spacing: -0.02em;
   color: #fff;
   white-space: nowrap;
 }
@@ -246,7 +247,7 @@ input { font-family: inherit; }
   grid-row: 2;
   display: flex;
   flex-direction: column;
-  background: var(--bg-elev);
+  background: var(--sidebar-bg);
   border-right: 1px solid var(--border);
   overflow-y: auto;
   padding: 16px 0;
@@ -516,14 +517,11 @@ input { font-family: inherit; }
 .age-pill {
   padding: 10px 14px 11px;
   border-radius: 999px;
-  background:
-    linear-gradient(180deg, rgba(255,255,255,0.88), rgba(245,245,244,0.58)),
-    rgba(255,255,255,0.72);
-  border: 1px solid rgba(214,211,209,0.72);
+  background: #efd1d1;
+  border: 1px solid rgba(164, 38, 44, 0.2);
   box-shadow:
     0 8px 22px rgba(28,25,23,0.08),
-    inset 0 1px 0 rgba(255,255,255,0.95);
-  backdrop-filter: blur(16px) saturate(1.35);
+    inset 0 1px 0 rgba(255,255,255,0.4);
 }
 
 .age-pill-top {
@@ -539,12 +537,12 @@ input { font-family: inherit; }
 .age-pill-top strong {
   font-family: var(--font-mono);
   font-size: 12px;
-  color: var(--accent);
+  color: #a4262c;
 }
 
 .age-slider {
   width: 100%;
-  accent-color: var(--accent);
+  accent-color: #a4262c;
   display: block;
   margin: 0;
   height: 14px;
@@ -1610,10 +1608,11 @@ input { font-family: inherit; }
 }
 
 .landing-title {
-  font-size: 28px;
+  font-size: 48px;
   font-weight: 700;
   margin-bottom: 32px;
   color: var(--text);
+  letter-spacing: -0.03em;
 }
 
 .drop-zone {
