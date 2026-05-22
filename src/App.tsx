@@ -6,6 +6,7 @@ import { FolderTree } from './components/FolderTree';
 import { Sidebar } from './components/Sidebar';
 import { FileInspector } from './components/FileInspector';
 import { Breadcrumbs } from './components/Breadcrumbs';
+import { DateDecisionChart } from './components/DateDecisionChart';
 import { Icon } from './components/Icons';
 import { formatNumber, formatSize } from './utils/formatters';
 
@@ -20,8 +21,6 @@ export default function App() {
   if (phase === 'landing') return <LandingPage />;
   if (phase === 'loading') return <LoadingSpinner />;
   if (!tree) return null;
-
-  const issueCount = tree.recursiveIssueCount;
 
   return (
     <div className="app">
@@ -58,13 +57,6 @@ export default function App() {
           <button className={`tab ${activeTab === 1 ? 'active' : ''}`} onClick={() => setActiveTab(1)}>
             <Icon.Pie /> Charts
           </button>
-          <button className={`tab ${activeTab === 2 ? 'active' : ''}`} onClick={() => setActiveTab(2)}>
-            <Icon.Sliders /> Migration Readiness
-            <span className="tab-badge">{formatNumber(issueCount)}</span>
-          </button>
-          <button className={`tab ${activeTab === 3 ? 'active' : ''}`} onClick={() => setActiveTab(3)}>
-            <Icon.Copy /> Duplicates
-          </button>
         </nav>
 
         {activeTab === 0 ? (
@@ -80,15 +72,7 @@ export default function App() {
               <FileInspector />
             </div>
           </>
-        ) : (
-          <div className="placeholder">
-            <div className="placeholder-icon">
-              {activeTab === 1 ? <Icon.Pie /> : activeTab === 2 ? <Icon.Sliders /> : <Icon.Copy />}
-            </div>
-            <h2>{activeTab === 1 ? 'Charts' : activeTab === 2 ? 'Migration Readiness' : 'Duplicates'}</h2>
-            <p>Coming soon.</p>
-          </div>
-        )}
+        ) : <DateDecisionChart />}
       </main>
     </div>
   );

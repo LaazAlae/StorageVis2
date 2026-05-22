@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useFileStore } from '../store/useFileStore';
 import { layoutTree, linkPath, NODE_H, FOLDER_H } from '../utils/treeLayout';
 import { heatColor, heatColorDark, textOnHeat, heatT, getMaxCount } from '../utils/colorScale';
 import { formatSize, formatNumber, formatCount, timeAgo } from '../utils/formatters';
 import { FolderIcon, FileIcon, topExts, Icon } from './Icons';
+import { filterTreeByModifiedAge } from '../utils/importPreview';
 import type { FolderNode, LayoutNode } from '../utils/types';
 
 const VIEW_ANIMATION_MS = 760;
@@ -18,6 +19,8 @@ export function FolderTree() {
   const selectedFolder = useFileStore((s) => s.selectedFolder);
   const setSelectedFolder = useFileStore((s) => s.setSelectedFolder);
   const hideSystemFolders = useFileStore((s) => s.hideSystemFolders);
+  const hideEmptyFolders = useFileStore((s) => s.hideEmptyFolders);
+  const activeCutoffDays = useFileStore((s) => s.activeCutoffDays);
   const search = useFileStore((s) => s.search);
 
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -32,10 +35,15 @@ export function FolderTree() {
   const viewAnimationTimer = useRef<number | null>(null);
   const pendingFocus = useRef<{ nodeId: string; mode: 'open' | 'select' } | null>(null);
 
-  const layout = useMemo(() => {
+  const previewTree = useMemo(() => {
     if (!tree) return null;
-    return layoutTree(tree, expanded, hideSystemFolders);
-  }, [tree, expanded, hideSystemFolders]);
+    return filterTreeByModifiedAge(tree, activeCutoffDays, hideEmptyFolders || activeCutoffDays !== null);
+  }, [tree, activeCutoffDays, hideEmptyFolders]);
+
+  const layout = useMemo(() => {
+    if (!previewTree) return null;
+    return layoutTree(previewTree, expanded, hideSystemFolders);
+  }, [previewTree, expanded, hideSystemFolders]);
 
   function animateView(next: { x: number; y: number; k: number }, duration = VIEW_ANIMATION_MS) {
     if (viewAnimationTimer.current !== null) {
@@ -212,16 +220,16 @@ export function FolderTree() {
   }
 
   const ancestorIds = useMemo(() => {
-    if (!selectedFolder || !tree) return new Set<string>();
+    if (!selectedFolder || !previewTree) return new Set<string>();
     const ids = new Set<string>();
     function walk(node: FolderNode): boolean {
       if (node.id === selectedFolder!.id) { ids.add(node.id); return true; }
       for (const c of node.children) { if (walk(c)) { ids.add(node.id); return true; } }
       return false;
     }
-    walk(tree);
+    walk(previewTree);
     return ids;
-  }, [selectedFolder, tree]);
+  }, [selectedFolder, previewTree]);
 
   const searchLower = search.trim().toLowerCase();
   const matchesSearch = (n: LayoutNode) => searchLower && n.data.name.toLowerCase().includes(searchLower);
@@ -231,7 +239,7 @@ export function FolderTree() {
     const f = node.data;
     setTooltip({
       x: node.x, y: node.y - NODE_H / 2,
-      name: f.name === tree?.name ? `${f.name}\\ (root)` : f.name,
+      name: f.name === previewTree?.name ? `${f.name}\\ (root)` : f.name,
       path: f.fullPath, count: f.recursiveFileCount,
       size: formatSize(f.recursiveSizeBytes),
       lastMod: f.lastMod ? timeAgo(f.lastMod) : '\u2014',
@@ -239,7 +247,7 @@ export function FolderTree() {
     });
   }
 
-  if (!tree || !layout) return null;
+  if (!tree || !previewTree || !layout) return null;
 
   const maxCount = getMaxCount();
 
@@ -292,7 +300,7 @@ export function FolderTree() {
                 </div>
                 <div className="fnode-meta">
                   <div className="fnode-name" title={n.data.name}>
-                    {n.data.name === tree.name ? `${n.data.name}\\` : n.data.name}
+                    {n.data.name === previewTree.name ? `${n.data.name}\\` : n.data.name}
                   </div>
                   <div className="fnode-sub">{subText}</div>
                 </div>

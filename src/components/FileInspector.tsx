@@ -3,12 +3,13 @@ import { useFileStore } from '../store/useFileStore';
 import { formatSize, formatNumber, timeAgo, CAT_COLORS } from '../utils/formatters';
 import { heatColor, heatColorDark, heatT } from '../utils/colorScale';
 import { FolderIcon, FileIcon, Icon } from './Icons';
+import { filterTreeByModifiedAge } from '../utils/importPreview';
 import type { FolderNode, FileRow } from '../utils/types';
 
 export function FileInspector() {
   const folder = useFileStore((s) => s.selectedFolder);
   const pileView = useFileStore((s) => s.pileView);
-  const dateMode = useFileStore((s) => s.dateMode);
+  const activeCutoffDays = useFileStore((s) => s.activeCutoffDays);
   const setSelectedFolder = useFileStore((s) => s.setSelectedFolder);
 
   const [view, setView] = useState<'list' | 'grid'>(pileView ? 'grid' : 'list');
@@ -20,7 +21,12 @@ export function FileInspector() {
     setView(pileView ? 'grid' : 'list');
   }, [folder, pileView]);
 
-  const files = folder?.files || [];
+  const previewFolder = useMemo(() => {
+    if (!folder) return null;
+    return filterTreeByModifiedAge(folder, activeCutoffDays, activeCutoffDays !== null);
+  }, [folder, activeCutoffDays]);
+
+  const files = previewFolder?.files || [];
 
   const filtered = useMemo(() => {
     if (filter === 'issues') return files.filter((f) => f.SharePointCompatibility !== 'OK' || f.DCISCompatibility !== 'OK');
@@ -36,7 +42,7 @@ export function FileInspector() {
         case 'name': va = a.FileName.toLowerCase(); vb = b.FileName.toLowerCase(); break;
         case 'ext': va = a.Extension; vb = b.Extension; break;
         case 'size': va = a.SizeBytes; vb = b.SizeBytes; break;
-        case 'date': va = dateMode === 'modified' ? a.ModifiedDate : a.CreatedDate; vb = dateMode === 'modified' ? b.ModifiedDate : b.CreatedDate; break;
+        case 'date': va = a.ModifiedDate; vb = b.ModifiedDate; break;
         case 'cat': va = a.FileCategory; vb = b.FileCategory; break;
         case 'prio': va = a.MigrationPriority; vb = b.MigrationPriority; break;
         case 'sp': va = a.SharePointCompatibility; vb = b.SharePointCompatibility; break;
@@ -47,9 +53,9 @@ export function FileInspector() {
       return 0;
     });
     return arr;
-  }, [filtered, sortKey, sortDir, dateMode]);
+  }, [filtered, sortKey, sortDir]);
 
-  if (!folder) return null;
+  if (!folder || !previewFolder) return null;
 
   function handleSort(key: string) {
     if (sortKey === key) setSortDir((d) => d === 'asc' ? 'desc' : 'asc');
@@ -57,9 +63,9 @@ export function FileInspector() {
   }
 
   const issueCount = files.filter((f) => f.SharePointCompatibility !== 'OK' || f.DCISCompatibility !== 'OK').length;
-  const dateLabel = dateMode === 'modified' ? 'Modified' : 'Created';
+  const dateLabel = 'Modified';
 
-  const t = heatT(folder.recursiveFileCount);
+  const t = heatT(previewFolder.recursiveFileCount);
   const body = heatColor(t);
   const tab = heatColorDark(t);
 
@@ -80,18 +86,18 @@ export function FileInspector() {
             <div style={{ width: 22, height: 18, flexShrink: 0, lineHeight: 0 }}>
               <FolderIcon body={body} tab={tab} width={22} height={18} decorated={false} />
             </div>
-            <span className="inspector-name">{folder.name}</span>
-            {folder.recursiveIssueCount > 0 && (
-              <span className="tagpill warn"><Icon.Warn />{formatNumber(folder.recursiveIssueCount)} issues</span>
+            <span className="inspector-name">{previewFolder.name}</span>
+            {previewFolder.recursiveIssueCount > 0 && (
+              <span className="tagpill warn"><Icon.Warn />{formatNumber(previewFolder.recursiveIssueCount)} issues</span>
             )}
           </div>
           <div className="inspector-path">{folder.fullPath}</div>
         </div>
         <div className="inspector-stats">
           <div className="inspector-stat"><div className="label">Direct</div><div className="value">{formatNumber(files.length)}</div></div>
-          <div className="inspector-stat"><div className="label">Recursive</div><div className="value">{formatNumber(folder.recursiveFileCount)}</div></div>
-          <div className="inspector-stat"><div className="label">Size</div><div className="value">{formatSize(folder.recursiveSizeBytes)}</div></div>
-          <div className="inspector-stat"><div className="label">Modified</div><div className="value">{timeAgo(folder.lastMod)}</div></div>
+          <div className="inspector-stat"><div className="label">Recursive</div><div className="value">{formatNumber(previewFolder.recursiveFileCount)}</div></div>
+          <div className="inspector-stat"><div className="label">Size</div><div className="value">{formatSize(previewFolder.recursiveSizeBytes)}</div></div>
+          <div className="inspector-stat"><div className="label">Modified</div><div className="value">{timeAgo(previewFolder.lastMod)}</div></div>
         </div>
         <button className="icon-btn" onClick={() => setSelectedFolder(null)} title="Close inspector" style={{ flexShrink: 0 }}>
           <Icon.Close />
@@ -151,7 +157,7 @@ export function FileInspector() {
                     </td>
                     <td className="mono dim">{f.Extension}</td>
                     <td className="mono">{formatSize(f.SizeBytes)}</td>
-                    <td className="mono dim">{dateMode === 'modified' ? new Date(f.ModifiedDate).toISOString().slice(0, 10) : new Date(f.CreatedDate).toISOString().slice(0, 10)}</td>
+                    <td className="mono dim">{new Date(f.ModifiedDate).toISOString().slice(0, 10)}</td>
                     <td>
                       <span className="cat-tag"><span className="dot" style={{ background: catColor }} />{f.FileCategory}</span>
                     </td>
