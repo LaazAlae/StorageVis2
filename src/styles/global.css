@@ -128,10 +128,10 @@ input { font-family: inherit; }
 }
 
 .brand-name {
-  font-family: var(--font-sans);
-  font-weight: 600;
-  font-size: 20px;
-  letter-spacing: -0.01em;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: 16px;
+  letter-spacing: 0;
   color: #fff;
   white-space: nowrap;
 }
@@ -246,15 +246,15 @@ input { font-family: inherit; }
   grid-row: 2;
   display: flex;
   flex-direction: column;
-  background: #f9e6e6;
-  border-right: 1px solid rgba(0,0,0,0.05);
+  background: var(--bg-elev);
+  border-right: 1px solid var(--border);
   overflow-y: auto;
   padding: 16px 0;
 }
 
 .sidebar-section {
   padding: 0 16px 16px;
-  border-bottom: 1px solid rgba(0,0,0,0.05);
+  border-bottom: 1px solid var(--border-subtle);
   margin-bottom: 16px;
 }
 .sidebar-section:last-child { border-bottom: none; }
@@ -268,7 +268,7 @@ input { font-family: inherit; }
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  color: #8b6a6a;
+  color: var(--text-4);
   margin-bottom: 10px;
 }
 
@@ -279,15 +279,15 @@ input { font-family: inherit; }
 }
 
 .kpi {
-  background: rgba(255, 255, 255, 0.4);
+  background: var(--bg-sunken);
   border-radius: 7px;
   padding: 10px 11px;
-  border: 1px solid rgba(0,0,0,0.03);
+  border: 1px solid var(--border-subtle);
 }
 
 .kpi-label {
   font-size: 10px;
-  color: #8b6a6a;
+  color: var(--text-3);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   font-weight: 500;
@@ -298,13 +298,13 @@ input { font-family: inherit; }
   font-family: var(--font-mono);
   font-size: 16px;
   font-weight: 600;
-  color: #443333;
+  color: var(--text);
   letter-spacing: -0.02em;
 }
 
 .kpi-sub {
   font-size: 10px;
-  color: #a68d8d;
+  color: var(--text-4);
   margin-top: 2px;
   font-family: var(--font-mono);
 }
@@ -318,7 +318,7 @@ input { font-family: inherit; }
   height: 10px;
   border-radius: 3px;
   margin-bottom: 6px;
-  border: 1px solid rgba(0,0,0,0.05);
+  border: 1px solid var(--border-subtle);
 }
 
 .legend-scale {
@@ -326,7 +326,7 @@ input { font-family: inherit; }
   justify-content: space-between;
   font-family: var(--font-mono);
   font-size: 10px;
-  color: #8b6a6a;
+  color: var(--text-3);
 }
 
 /* Category bars */
@@ -341,7 +341,7 @@ input { font-family: inherit; }
   padding: 4px 6px;
   margin: 0 -6px;
 }
-.cat-row:hover { background: rgba(255, 255, 255, 0.3); }
+.cat-row:hover { background: var(--bg-sunken); }
 
 .cat-swatch {
   width: 10px;
@@ -351,7 +351,7 @@ input { font-family: inherit; }
 }
 
 .cat-name {
-  color: #443333;
+  color: var(--text-2);
   font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
@@ -361,14 +361,14 @@ input { font-family: inherit; }
 .cat-count {
   font-family: var(--font-mono);
   font-size: 11px;
-  color: #8b6a6a;
+  color: var(--text-3);
 }
 
 .cat-bar-wrap {
   grid-column: 1 / -1;
   margin-top: 2px;
   height: 3px;
-  background: rgba(0,0,0,0.05);
+  background: var(--bg-sunken);
   border-radius: 2px;
   overflow: hidden;
 }
@@ -388,7 +388,7 @@ input { font-family: inherit; }
 }
 
 .filter-row label {
-  color: #443333;
+  color: var(--text-2);
   font-weight: 500;
   cursor: pointer;
   user-select: none;
@@ -399,7 +399,7 @@ input { font-family: inherit; }
   width: 30px;
   height: 16px;
   border-radius: 8px;
-  background: rgba(0,0,0,0.1);
+  background: var(--border-strong);
   border: none;
   padding: 0;
   cursor: pointer;
@@ -417,11 +417,11 @@ input { font-family: inherit; }
   background: white;
   border-radius: 50%;
   transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
-  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.15);
 }
 
 .toggle.on {
-  background: #a4262c;
+  background: var(--accent);
 }
 .toggle.on::after {
   transform: translateX(14px);
@@ -429,10 +429,10 @@ input { font-family: inherit; }
 
 .segmented {
   display: flex;
-  background: rgba(0,0,0,0.05);
+  background: var(--bg-sunken);
   border-radius: 7px;
   padding: 2px;
-  border: 1px solid rgba(0,0,0,0.03);
+  border: 1px solid var(--border-subtle);
 }
 
 .segmented button {
@@ -441,23 +441,23 @@ input { font-family: inherit; }
   background: transparent;
   padding: 5px 8px;
   font-size: 12px;
-  color: #8b6a6a;
+  color: var(--text-3);
   border-radius: 5px;
   font-weight: 500;
   transition: background 0.12s, color 0.12s;
 }
 
 .segmented button.active {
-  background: rgba(255, 255, 255, 0.6);
-  color: #443333;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  background: var(--bg-elev);
+  color: var(--text);
+  box-shadow: var(--shadow-sm);
 }
 
 .import-preview-box {
   margin-top: 12px;
   padding: 10px;
-  background: rgba(255, 255, 255, 0.2);
-  border: 1px solid rgba(0,0,0,0.03);
+  background: var(--bg-sunken);
+  border: 1px solid var(--border-subtle);
   border-radius: 8px;
 }
 
@@ -472,25 +472,25 @@ input { font-family: inherit; }
 }
 
 .cutoff-chip {
-  border: 1px solid rgba(0,0,0,0.05);
-  background: rgba(255, 255, 255, 0.4);
-  color: #8b6a6a;
+  border: 1px solid var(--border);
+  background: var(--bg-elev);
+  color: var(--text-3);
   border-radius: 6px;
   padding: 5px 8px;
   font-size: 11px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.12s;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
 }
 
 .cutoff-chip:hover {
-  border-color: rgba(0,0,0,0.1);
-  color: #443333;
+  border-color: var(--border-strong);
+  color: var(--text-2);
 }
 
 .cutoff-chip.active {
-  background: #a4262c;
-  border-color: #a4262c;
+  background: var(--accent);
+  border-color: var(--accent);
   color: white;
 }
 
@@ -500,10 +500,10 @@ input { font-family: inherit; }
   gap: 8px;
   margin-top: 8px;
   padding-top: 8px;
-  border-top: 1px solid rgba(0,0,0,0.05);
+  border-top: 1px solid var(--border-subtle);
   font-family: var(--font-mono);
   font-size: 11px;
-  color: #443333;
+  color: var(--text-2);
 }
 
 .age-filter {
@@ -516,11 +516,14 @@ input { font-family: inherit; }
 .age-pill {
   padding: 10px 14px 11px;
   border-radius: 999px;
-  background: #efd1d1;
-  border: 1px solid rgba(0,0,0,0.05);
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.88), rgba(245,245,244,0.58)),
+    rgba(255,255,255,0.72);
+  border: 1px solid rgba(214,211,209,0.72);
   box-shadow:
-    0 4px 12px rgba(0,0,0,0.05),
-    inset 0 1px 0 rgba(255,255,255,0.4);
+    0 8px 22px rgba(28,25,23,0.08),
+    inset 0 1px 0 rgba(255,255,255,0.95);
+  backdrop-filter: blur(16px) saturate(1.35);
 }
 
 .age-pill-top {
@@ -530,18 +533,18 @@ input { font-family: inherit; }
   gap: 8px;
   margin-bottom: 6px;
   font-size: 12px;
-  color: #443333;
+  color: var(--text-2);
 }
 
 .age-pill-top strong {
   font-family: var(--font-mono);
   font-size: 12px;
-  color: #a4262c;
+  color: var(--accent);
 }
 
 .age-slider {
   width: 100%;
-  accent-color: #a4262c;
+  accent-color: var(--accent);
   display: block;
   margin: 0;
   height: 14px;
