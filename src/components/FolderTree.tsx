@@ -6,6 +6,11 @@ import { formatSize, formatNumber, formatCount, timeAgo } from '../utils/formatt
 import { FolderIcon, FileIcon, topExts, Icon } from './Icons';
 import type { FolderNode, LayoutNode } from '../utils/types';
 
+const VIEW_ANIMATION_MS = 760;
+const ZOOM_ANIMATION_MS = 240;
+const WHEEL_SETTLE_MS = 140;
+const WHEEL_ZOOM_SENSITIVITY = 0.0011;
+
 export function FolderTree() {
   const tree = useFileStore((s) => s.tree);
   const expanded = useFileStore((s) => s.expanded);
@@ -23,11 +28,36 @@ export function FolderTree() {
     count: number; size: string; lastMod: string; issues: number;
   } | null>(null);
   const [hasFit, setHasFit] = useState(false);
+  const [viewAnimationMs, setViewAnimationMs] = useState(0);
+  const viewAnimationTimer = useRef<number | null>(null);
+  const pendingFocus = useRef<{ nodeId: string; mode: 'open' | 'select' } | null>(null);
 
   const layout = useMemo(() => {
     if (!tree) return null;
     return layoutTree(tree, expanded, hideSystemFolders);
   }, [tree, expanded, hideSystemFolders]);
+
+  function animateView(next: { x: number; y: number; k: number }, duration = VIEW_ANIMATION_MS) {
+    if (viewAnimationTimer.current !== null) {
+      window.clearTimeout(viewAnimationTimer.current);
+    }
+    setViewAnimationMs(duration);
+    setTransform(next);
+    if (duration > 0) {
+      viewAnimationTimer.current = window.setTimeout(() => {
+        setViewAnimationMs(0);
+        viewAnimationTimer.current = null;
+      }, duration);
+    }
+  }
+
+  useEffect(() => {
+    return () => {
+      if (viewAnimationTimer.current !== null) {
+        window.clearTimeout(viewAnimationTimer.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (hasFit || !layout) return;
@@ -39,9 +69,47 @@ export function FolderTree() {
     const k = Math.min(1, (cw - 40) / layout.bounds.w);
     const k1 = Math.max(0.45, k);
     const x = cw / 2 - (layout.bounds.w / 2) * k1;
-    setTransform({ x, y: 32, k: k1 });
+    animateView({ x, y: 32, k: k1 }, 0);
     setHasFit(true);
   }, [layout, hasFit]);
+
+  useEffect(() => {
+    const focus = pendingFocus.current;
+    if (!focus || !layout) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const source = layout.nodes.find((n) => n.id === focus.nodeId);
+    if (!source) return;
+
+    const visibleChildren = layout.nodes.filter((n) => n.parentId === source.id);
+    const focusNodes = focus.mode === 'open' && visibleChildren.length > 0
+      ? [source, ...visibleChildren]
+      : [source];
+
+    const minX = Math.min(...focusNodes.map((n) => n.x - n.w / 2));
+    const maxX = Math.max(...focusNodes.map((n) => n.x + n.w / 2));
+    const minY = Math.min(...focusNodes.map((n) => n.y - FOLDER_H / 2));
+    const maxY = Math.max(...focusNodes.map((n) => n.y + NODE_H / 2));
+
+    const cw = canvas.clientWidth;
+    const ch = canvas.clientHeight;
+    if (cw <= 0 || ch <= 0) return;
+
+    const groupW = Math.max(maxX - minX, source.w);
+    const groupH = Math.max(maxY - minY, NODE_H);
+    const fitK = Math.min((cw - 96) / groupW, (ch - 120) / groupH, 1.05);
+    const k = Math.max(0.28, Math.min(transform.k, fitK));
+    const centerX = (minX + maxX) / 2;
+    const sourceScreenY = focus.mode === 'open' ? Math.max(72, ch * 0.18) : ch * 0.35;
+
+    pendingFocus.current = null;
+    animateView({
+      x: cw / 2 - centerX * k,
+      y: sourceScreenY - source.y * k,
+      k,
+    });
+  }, [layout]);
 
   function fitToView() {
     const canvas = canvasRef.current;
@@ -53,7 +121,7 @@ export function FolderTree() {
     const kY = ch / layout.bounds.h;
     const k = Math.max(0.4, Math.min(kX, kY, 1.0));
     const x = (cw - layout.bounds.w * k) / 2;
-    setTransform({ x, y: 32, k });
+    animateView({ x, y: 32, k });
   }
 
   function centerOn(nodeId: string) {
@@ -63,17 +131,18 @@ export function FolderTree() {
     const ch = canvas.clientHeight;
     const target = layout.nodes.find((n) => n.id === nodeId);
     if (!target) return;
-    setTransform((t) => ({
-      ...t,
-      x: cw / 2 - target.x * t.k,
-      y: ch * 0.35 - target.y * t.k,
-    }));
+    animateView({
+      ...transform,
+      x: cw / 2 - target.x * transform.k,
+      y: ch * 0.35 - target.y * transform.k,
+    });
   }
 
   const dragStart = useRef<{ x: number; y: number; tx: number; ty: number } | null>(null);
   function onMouseDown(e: React.MouseEvent) {
     if (e.button !== 0) return;
     if ((e.target as HTMLElement).closest('.fnode') || (e.target as HTMLElement).closest('.pile-node')) return;
+    setViewAnimationMs(0);
     setDragging(true);
     dragStart.current = { x: e.clientX, y: e.clientY, tx: transform.x, ty: transform.y };
   }
@@ -108,28 +177,38 @@ export function FolderTree() {
     const rect = canvas.getBoundingClientRect();
     const mx = e.clientX - rect.left;
     const my = e.clientY - rect.top;
+    if (viewAnimationTimer.current !== null) {
+      window.clearTimeout(viewAnimationTimer.current);
+    }
+    setViewAnimationMs(WHEEL_SETTLE_MS);
+    viewAnimationTimer.current = window.setTimeout(() => {
+      setViewAnimationMs(0);
+      viewAnimationTimer.current = null;
+    }, WHEEL_SETTLE_MS);
     setTransform((t) => {
-      const k1 = Math.max(0.15, Math.min(3, t.k * (e.deltaY < 0 ? 1.12 : 1 / 1.12)));
+      const delta = Math.max(-120, Math.min(120, e.deltaY));
+      const k1 = Math.max(0.15, Math.min(3, t.k * Math.exp(-delta * WHEEL_ZOOM_SENSITIVITY)));
       const dx = (mx - t.x) * (k1 / t.k - 1);
       const dy = (my - t.y) * (k1 / t.k - 1);
       return { x: t.x - dx, y: t.y - dy, k: k1 };
     });
   }
 
-  const zoomIn = () => setTransform((t) => ({ ...t, k: Math.min(3, t.k * 1.2) }));
-  const zoomOut = () => setTransform((t) => ({ ...t, k: Math.max(0.15, t.k / 1.2) }));
+  const zoomIn = () => animateView({ ...transform, k: Math.min(3, transform.k * 1.16) }, ZOOM_ANIMATION_MS);
+  const zoomOut = () => animateView({ ...transform, k: Math.max(0.15, transform.k / 1.16) }, ZOOM_ANIMATION_MS);
 
   function onNodeClick(node: LayoutNode) {
     if (node.kind === 'pile') {
       setSelectedFolder(node.data, true);
       return;
     }
+    const isOpening = !expanded.has(node.id);
     const next = new Set(expanded);
     if (next.has(node.id)) next.delete(node.id);
     else next.add(node.id);
+    pendingFocus.current = { nodeId: node.id, mode: isOpening ? 'open' : 'select' };
     setExpanded(next);
     setSelectedFolder(node.data, false);
-    setTimeout(() => centerOn(node.id), 50);
   }
 
   const ancestorIds = useMemo(() => {
@@ -167,8 +246,12 @@ export function FolderTree() {
   return (
     <div className={`canvas ${dragging ? 'dragging' : ''}`} ref={canvasRef}
       onMouseDown={onMouseDown} onWheel={onWheel}>
-      <div className="canvas-inner"
-        style={{ transform: `translate(${transform.x}px, ${transform.y}px) scale(${transform.k})` }}>
+      <div
+        className={`canvas-inner ${viewAnimationMs > 0 && !dragging ? 'animating' : ''}`}
+        style={{
+          transform: `translate(${transform.x}px, ${transform.y}px) scale(${transform.k})`,
+          transitionDuration: viewAnimationMs > 0 && !dragging ? `${viewAnimationMs}ms` : undefined,
+        }}>
         <svg className="tree-svg" width={layout.bounds.w} height={layout.bounds.h}
           viewBox={`0 0 ${layout.bounds.w} ${layout.bounds.h}`}>
           {layout.links.map((l, i) => {

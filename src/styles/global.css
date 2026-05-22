@@ -634,6 +634,10 @@ input { font-family: inherit; }
   will-change: transform;
 }
 
+.canvas-inner.animating {
+  transition: transform 760ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
 .tree-svg {
   position: absolute;
   top: 0;
@@ -662,7 +666,10 @@ input { font-family: inherit; }
   cursor: pointer;
   user-select: none;
   transform: translate(-50%, -50%);
-  transition: filter 0.15s;
+  transition:
+    left 620ms cubic-bezier(0.16, 1, 0.3, 1),
+    top 620ms cubic-bezier(0.16, 1, 0.3, 1),
+    filter 0.15s;
 }
 .fnode:hover { filter: brightness(1.04); }
 
@@ -785,6 +792,9 @@ input { font-family: inherit; }
   cursor: pointer;
   user-select: none;
   transform: translate(-50%, -50%);
+  transition:
+    left 620ms cubic-bezier(0.16, 1, 0.3, 1),
+    top 620ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .pile-stack {
