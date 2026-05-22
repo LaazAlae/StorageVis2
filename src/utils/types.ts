@@ -32,28 +32,41 @@ export interface FolderNode {
   id: string;
   name: string;
   path: string;
+  fullPath: string;
   depth: number;
   parentId: string | null;
   children: FolderNode[];
   files: FileRow[];
   recursiveFileCount: number;
   recursiveSizeBytes: number;
+  recursiveIssueCount: number;
   maxModifiedDate: number;
   maxCreatedDate: number;
+  lastMod: number;
 }
 
 export type DateMode = 'modified' | 'created';
 
-export type NodeType = 'folder' | 'filePile';
-
-export interface OrgChartDatum {
+export interface LayoutNode {
   id: string;
-  parentId: string;
-  name: string;
-  recursiveFileCount: number;
-  recursiveSizeBytes: number;
-  maxDate: number;
+  kind: 'folder' | 'pile';
+  x: number;
+  y: number;
+  w: number;
   depth: number;
-  nodeType: NodeType;
-  _folderNode: FolderNode;
+  data: FolderNode;
+  parentId: string | null;
+  isOpen: boolean;
+  hasHiddenChildren: boolean;
+}
+
+export interface LayoutLink {
+  from: LayoutNode;
+  to: LayoutNode;
+}
+
+export interface LayoutResult {
+  nodes: LayoutNode[];
+  links: LayoutLink[];
+  bounds: { w: number; h: number };
 }

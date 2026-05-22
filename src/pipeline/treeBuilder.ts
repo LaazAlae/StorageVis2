@@ -1,33 +1,15 @@
 import type { FileRow, FolderNode } from '../utils/types';
 
 interface RawRow {
-  FullPath: string;
-  FileName: string;
-  Extension: string;
-  SizeBytes: string;
-  SizeKB: string;
-  SizeMB: string;
-  CreatedDate: string;
-  ModifiedDate: string;
-  AccessedDate: string;
-  DaysSinceModified: string;
-  DaysSinceAccessed: string;
-  YearsSinceModified: string;
-  FolderDepth: string;
-  ParentFolder: string;
-  Department: string;
-  FileCategory: string;
-  IsTempFile: string;
-  IsEmptyFile: string;
-  IsProbablyDuplicate: string;
-  IsTemplateFile: string;
-  IsMacroEnabled: string;
-  MayBeLinkedDataSource: string;
-  IsOutlookDataFile: string;
-  SharePointCompatibility: string;
-  PathLength: string;
-  MigrationPriority: string;
-  DCISCompatibility: string;
+  FullPath: string; FileName: string; Extension: string;
+  SizeBytes: string; SizeKB: string; SizeMB: string;
+  CreatedDate: string; ModifiedDate: string; AccessedDate: string;
+  DaysSinceModified: string; DaysSinceAccessed: string; YearsSinceModified: string;
+  FolderDepth: string; ParentFolder: string; Department: string; FileCategory: string;
+  IsTempFile: string; IsEmptyFile: string; IsProbablyDuplicate: string;
+  IsTemplateFile: string; IsMacroEnabled: string; MayBeLinkedDataSource: string;
+  IsOutlookDataFile: string; SharePointCompatibility: string;
+  PathLength: string; MigrationPriority: string; DCISCompatibility: string;
 }
 
 function parseBool(val: string): boolean {
@@ -75,19 +57,22 @@ function parseRow(raw: RawRow): FileRow {
 export function buildTree(rawRows: RawRow[]): FolderNode {
   const folderMap = new Map<string, FolderNode>();
 
-  // Create root node
+  let drivePrefix = '';
+  if (rawRows.length > 0) {
+    const first = (rawRows[0] as any).FullPath || '';
+    const segs = first.split('\\');
+    if (segs.length > 0 && /^[A-Z]:$/i.test(segs[0])) {
+      drivePrefix = segs[0];
+    }
+  }
+
+  const rootName = drivePrefix || 'Root';
+
   const root: FolderNode = {
-    id: 'root',
-    name: 'Root',
-    path: '',
-    depth: 0,
-    parentId: null,
-    children: [],
-    files: [],
-    recursiveFileCount: 0,
-    recursiveSizeBytes: 0,
-    maxModifiedDate: 0,
-    maxCreatedDate: 0,
+    id: 'root', name: rootName, path: '', fullPath: drivePrefix || 'Root',
+    depth: 0, parentId: null, children: [], files: [],
+    recursiveFileCount: 0, recursiveSizeBytes: 0, recursiveIssueCount: 0,
+    maxModifiedDate: 0, maxCreatedDate: 0, lastMod: 0,
   };
   folderMap.set('', root);
 
@@ -96,17 +81,11 @@ export function buildTree(rawRows: RawRow[]): FolderNode {
     const fullPath = file.FullPath;
     if (!fullPath) continue;
 
-    // Split path and remove drive letter prefix
     const segments = fullPath.split('\\');
-    // First segment is like "O:" — remove it
-    if (segments.length > 0 && /^[A-Z]:$/i.test(segments[0])) {
-      segments.shift();
-    }
-    // Last segment is the filename
+    if (segments.length > 0 && /^[A-Z]:$/i.test(segments[0])) segments.shift();
     if (segments.length === 0) continue;
     segments.pop();
 
-    // Ensure all folder segments exist
     let currentPath = '';
     let parentPath = '';
     for (let i = 0; i < segments.length; i++) {
@@ -114,54 +93,42 @@ export function buildTree(rawRows: RawRow[]): FolderNode {
       currentPath = currentPath ? `${currentPath}\\${segments[i]}` : segments[i];
 
       if (!folderMap.has(currentPath)) {
+        const fp = drivePrefix ? `${drivePrefix}\\${currentPath}` : currentPath;
         const folder: FolderNode = {
-          id: currentPath,
-          name: segments[i],
-          path: currentPath,
-          depth: i + 1,
-          parentId: parentPath || 'root',
-          children: [],
-          files: [],
-          recursiveFileCount: 0,
-          recursiveSizeBytes: 0,
-          maxModifiedDate: 0,
-          maxCreatedDate: 0,
+          id: currentPath, name: segments[i], path: currentPath, fullPath: fp,
+          depth: i + 1, parentId: parentPath || 'root',
+          children: [], files: [],
+          recursiveFileCount: 0, recursiveSizeBytes: 0, recursiveIssueCount: 0,
+          maxModifiedDate: 0, maxCreatedDate: 0, lastMod: 0,
         };
         folderMap.set(currentPath, folder);
-
-        // Attach to parent
         const parent = folderMap.get(parentPath);
-        if (parent) {
-          parent.children.push(folder);
-        } else {
-          // Attach to root if parent somehow doesn't exist
-          root.children.push(folder);
-        }
+        if (parent) { parent.children.push(folder); }
+        else { root.children.push(folder); }
       }
     }
 
-    // Attach file to its parent folder
     const parentFolder = folderMap.get(currentPath);
-    if (parentFolder) {
-      parentFolder.files.push(file);
-    } else {
-      // File at root level (no folder segments after removing drive letter)
-      root.files.push(file);
-    }
+    if (parentFolder) { parentFolder.files.push(file); }
+    else { root.files.push(file); }
   }
 
-  // Bottom-up metadata bubbling
-  function computeStats(folder: FolderNode): void {
-    // First, recurse into children
-    for (const child of folder.children) {
-      computeStats(child);
-    }
+  function sortChildren(folder: FolderNode): void {
+    folder.children.sort((a, b) => a.name.localeCompare(b.name));
+    for (const child of folder.children) sortChildren(child);
+  }
+  sortChildren(root);
 
-    // Compute stats from direct files
+  function computeStats(folder: FolderNode): void {
+    for (const child of folder.children) computeStats(child);
+
     let fileCount = folder.files.length;
     let sizeBytes = 0;
     let maxMod = 0;
     let maxCreated = 0;
+    let issueCount = folder.files.filter(
+      (f) => f.SharePointCompatibility !== 'OK' && f.SharePointCompatibility !== '',
+    ).length;
 
     for (const f of folder.files) {
       sizeBytes += f.SizeBytes;
@@ -169,21 +136,22 @@ export function buildTree(rawRows: RawRow[]): FolderNode {
       if (f.CreatedDate > maxCreated) maxCreated = f.CreatedDate;
     }
 
-    // Add children's stats
     for (const child of folder.children) {
       fileCount += child.recursiveFileCount;
       sizeBytes += child.recursiveSizeBytes;
+      issueCount += child.recursiveIssueCount;
       if (child.maxModifiedDate > maxMod) maxMod = child.maxModifiedDate;
       if (child.maxCreatedDate > maxCreated) maxCreated = child.maxCreatedDate;
     }
 
     folder.recursiveFileCount = fileCount;
     folder.recursiveSizeBytes = sizeBytes;
+    folder.recursiveIssueCount = issueCount;
     folder.maxModifiedDate = maxMod;
     folder.maxCreatedDate = maxCreated;
+    folder.lastMod = maxMod;
   }
 
   computeStats(root);
-
   return root;
 }

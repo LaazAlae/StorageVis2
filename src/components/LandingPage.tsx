@@ -2,7 +2,7 @@ import React, { useCallback, useRef, useState } from 'react';
 import { useFileStore } from '../store/useFileStore';
 import { parseCSV } from '../pipeline/csvParser';
 import { buildTree } from '../pipeline/treeBuilder';
-import { initColorScale } from '../utils/colorScale';
+import { setMaxCount } from '../utils/colorScale';
 
 export const LandingPage = React.memo(function LandingPage() {
   const setPhase = useFileStore((s) => s.setPhase);
@@ -19,14 +19,13 @@ export const LandingPage = React.memo(function LandingPage() {
         const rows = await parseCSV(file, (p) => setLoadProgress(p.percent));
         setLoadProgress(100);
         const tree = buildTree(rows as any);
-        // Find max recursive file count across all folders for color scale
         let maxFiles = 0;
         function walk(node: typeof tree) {
-          if (node.recursiveFileCount > maxFiles) maxFiles = node.recursiveFileCount;
+          if (node.id !== 'root' && node.recursiveFileCount > maxFiles) maxFiles = node.recursiveFileCount;
           for (const c of node.children) walk(c);
         }
         walk(tree);
-        initColorScale(maxFiles);
+        setMaxCount(maxFiles);
         setTree(tree);
       } catch (e) {
         console.error('Failed to parse CSV:', e);
@@ -66,9 +65,7 @@ export const LandingPage = React.memo(function LandingPage() {
       <h1 className="landing-title">File Inventory Explorer</h1>
       <div
         className={`drop-zone ${dragging ? 'drop-zone--active' : ''}`}
-        onDrop={onDrop}
-        onDragOver={onDragOver}
-        onDragLeave={onDragLeave}
+        onDrop={onDrop} onDragOver={onDragOver} onDragLeave={onDragLeave}
         onClick={() => inputRef.current?.click()}
       >
         <div className="drop-zone-icon">
@@ -79,13 +76,7 @@ export const LandingPage = React.memo(function LandingPage() {
           </svg>
         </div>
         <p className="drop-zone-text">Drop your CSV file here or click to browse</p>
-        <input
-          ref={inputRef}
-          type="file"
-          accept=".csv"
-          onChange={onFileSelect}
-          style={{ display: 'none' }}
-        />
+        <input ref={inputRef} type="file" accept=".csv" onChange={onFileSelect} style={{ display: 'none' }} />
       </div>
       <p className="landing-description">
         Visualize file inventory data from your pre-migration scan. All processing
