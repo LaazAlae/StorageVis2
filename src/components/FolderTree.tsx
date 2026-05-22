@@ -80,11 +80,12 @@ export function FolderTree() {
 
   useEffect(() => {
     function onMove(e: MouseEvent) {
-      if (!dragging || !dragStart.current) return;
+      const start = dragStart.current;
+      if (!dragging || !start) return;
       setTransform((t) => ({
         ...t,
-        x: dragStart.current!.tx + (e.clientX - dragStart.current!.x),
-        y: dragStart.current!.ty + (e.clientY - dragStart.current!.y),
+        x: start.tx + (e.clientX - start.x),
+        y: start.ty + (e.clientY - start.y),
       }));
     }
     function onUp() {
